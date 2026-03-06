@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import items
+
 app = FastAPI()
 
 @app.get("/")
