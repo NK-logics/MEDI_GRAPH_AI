@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import GraphPanel from "./GraphPanel";
 
 const TOKEN_KEY = "memory_graph_token";
@@ -18,6 +18,41 @@ function App() {
   const title = useMemo(() => {
     return mode === "login" ? "Welcome Back" : "Create Your Graph Space";
   }, [mode]);
+
+  // Add animation styles
+  useEffect(() => {
+    // Ensure body has dark background
+    document.body.style.backgroundColor = "#0d1117";
+    document.body.style.margin = "0";
+    document.body.style.padding = "0";
+    
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = `
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html, body {
+        background-color: #0d1117 !important;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+      #root {
+        background-color: #0d1117;
+        min-height: 100vh;
+      }
+    `;
+    document.head.appendChild(styleSheet);
+    return () => styleSheet.remove();
+  }, []);
 
   async function handleAuthSubmit(event) {
     event.preventDefault();
@@ -70,13 +105,27 @@ function App() {
     return (
       <div style={styles.appShell}>
         <header style={styles.topBar}>
-          <div>
-            <div style={styles.brand}>Memory Graph</div>
-            <div style={styles.subtleText}>Signed in as {userId || "user"}</div>
+          <div style={styles.logo}>
+            <div style={styles.logoMark}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d1117" strokeWidth="2.5">
+                <circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/>
+                <line x1="7" y1="12" x2="17" y2="6"/><line x1="7" y1="12" x2="17" y2="18"/>
+              </svg>
+            </div>
+            MediGraph
           </div>
-          <button type="button" onClick={handleLogout} style={styles.ghostButton}>
-            Logout
-          </button>
+          <nav style={styles.nav}>
+            <a href="#graph" style={styles.navLink}>Visualization</a>
+            <a href="#features" style={styles.navLink}>Features</a>
+            <a href="#stack" style={styles.navLink}>Stack</a>
+            <a href="#demo" style={styles.navLink}>Demo</a>
+          </nav>
+          <div style={styles.userSection}>
+            <span style={styles.userEmail}>{userId || "user"}</span>
+            <button type="button" onClick={handleLogout} style={styles.logoutButton}>
+              Logout
+            </button>
+          </div>
         </header>
         <main style={styles.graphWrap}>
           <GraphPanel token={token} onUnauthorized={handleLogout} />
@@ -87,67 +136,100 @@ function App() {
 
   return (
     <div style={styles.authScene}>
-      <div style={styles.backGlowOne} />
-      <div style={styles.backGlowTwo} />
+      {/* Dark base layer */}
+      <div style={styles.darkBase} />
+      
+      {/* Background elements */}
+      <div style={styles.backgroundGradient} />
+      <div style={styles.gridPattern} />
+      
+      {/* Hero section with split layout */}
+      <div style={styles.splitContainer}>
+        {/* Left side - Hero content */}
+        <div style={styles.heroSection}>
+          <div style={styles.heroContent}>
 
-      <section style={styles.authCard}>
-        <h1 style={styles.title}>{title}</h1>
-        <p style={styles.subtitle}>
-          Authenticate first, then your personal graph visualization loads automatically.
-        </p>
-
-        <div style={styles.toggleWrap}>
-          <button
-            type="button"
-            onClick={() => setMode("login")}
-            style={mode === "login" ? styles.toggleActive : styles.toggle}
-          >
-            Login
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("signup")}
-            style={mode === "signup" ? styles.toggleActive : styles.toggle}
-          >
-            Signup
-          </button>
+            <h1 style={styles.heroTitle}>
+              Explore Personal Health
+              <br />
+              <span style={styles.heroHighlight}>as a Living Graph</span>
+            </h1>
+            <p style={styles.heroDescription}>
+              A privacy-aware healthcare memory assistant that stores
+              symptoms, medications, triggers, and lifestyle history
+              as a dynamic knowledge graph for explainable insights
+              and smarter doctor consultations.
+            </p>
+            <div style={styles.heroButtons}>
+              <button style={styles.primaryButton}>See Visualization →</button>
+              <button style={styles.secondaryButton}>Chat+Graph Demo</button>
+            </div>
+           
+          </div>
         </div>
 
-        <form onSubmit={handleAuthSubmit} style={styles.form}>
-          {mode === "signup" ? (
-            <input
-              style={styles.input}
-              type="text"
-              placeholder="Full name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
-            />
-          ) : null}
-          <input
-            style={styles.input}
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-          <input
-            style={styles.input}
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
+        {/* Right side - Auth card */}
+        <div style={styles.authSection}>
+          <section style={styles.authCard}>
+            <h2 style={styles.title}>{title}</h2>
+            <p style={styles.subtitle}>
+              Authenticate to access your personal health graph
+            </p>
 
-          {error ? <div style={styles.error}>{error}</div> : null}
+            <div style={styles.toggleWrap}>
+              <button
+                type="button"
+                onClick={() => setMode("login")}
+                style={mode === "login" ? styles.toggleActive : styles.toggle}
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("signup")}
+                style={mode === "signup" ? styles.toggleActive : styles.toggle}
+              >
+                Sign Up
+              </button>
+            </div>
 
-          <button type="submit" style={styles.primaryButton} disabled={loading}>
-            {loading ? "Authenticating..." : mode === "login" ? "Login & Open Graph" : "Signup & Open Graph"}
-          </button>
-        </form>
-      </section>
+            <form onSubmit={handleAuthSubmit} style={styles.form}>
+              {mode === "signup" ? (
+                <input
+                  style={styles.input}
+                  type="text"
+                  placeholder="Full name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  required
+                />
+              ) : null}
+              <input
+                style={styles.input}
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+              <input
+                style={styles.input}
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+
+              {error ? <div style={styles.error}>{error}</div> : null}
+
+              <button type="submit" style={styles.submitButton} disabled={loading}>
+                {loading ? "Authenticating..." : mode === "login" ? "Login →" : "Sign Up →"}
+              </button>
+            </form>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }
@@ -155,141 +237,343 @@ function App() {
 const styles = {
   appShell: {
     minHeight: "100vh",
-    background: "radial-gradient(circle at 15% 20%, #bce7ff 0%, #f5f9ff 38%, #f8eee3 100%)",
-    color: "#102333",
-    fontFamily: "'Space Grotesk', 'Trebuchet MS', sans-serif",
-    padding: "20px",
+    background: "#0d1117",
+    color: "#dde5f4",
+    fontFamily: "'DM Mono', 'Inter', monospace",
   },
   topBar: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "10px 4px 18px",
+    padding: "0 48px",
+    height: "60px",
+    background: "rgba(13,17,23,0.95)",
+    backdropFilter: "blur(14px)",
+    borderBottom: "1px solid #252f42",
   },
-  brand: {
-    fontSize: "24px",
+  logo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    fontFamily: "'Clash Display', sans-serif",
+    fontSize: "20px",
     fontWeight: 700,
-    letterSpacing: "0.03em",
+    letterSpacing: "-0.5px",
+    color: "#dde5f4",
   },
-  subtleText: {
-    opacity: 0.75,
+  logoMark: {
+    width: "30px",
+    height: "30px",
+    background: "#4ecdc4",
+    borderRadius: "7px",
+    display: "grid",
+    placeItems: "center",
+  },
+  nav: {
+    display: "flex",
+    gap: "32px",
+    listStyle: "none",
+  },
+  navLink: {
+    color: "#5c7099",
+    textDecoration: "none",
+    fontSize: "12px",
+    letterSpacing: "0.5px",
+    transition: "color 0.2s",
+    ":hover": {
+      color: "#4ecdc4",
+    },
+  },
+  userSection: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+  },
+  userEmail: {
+    color: "#5c7099",
+    fontSize: "12px",
+  },
+  logoutButton: {
+    padding: "8px 20px",
+    background: "#4ecdc4",
+    color: "#0d1117",
+    border: "none",
+    borderRadius: "8px",
+    fontFamily: "'Clash Display', sans-serif",
     fontSize: "13px",
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "opacity 0.2s",
+    ":hover": {
+      opacity: 0.85,
+    },
   },
   graphWrap: {
-    maxWidth: "1200px",
-    margin: "0 auto",
+    height: "calc(100vh - 60px)",
+    padding: "20px",
+    background: "#0d1117",
   },
   authScene: {
     minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: "24px",
     position: "relative",
     overflow: "hidden",
-    background: "linear-gradient(140deg, #042f4b 0%, #104f55 45%, #6f8c3a 100%)",
-    fontFamily: "'Space Grotesk', 'Trebuchet MS', sans-serif",
+    fontFamily: "'DM Mono', monospace",
+    background: "#0d1117",
+    backgroundColor: "#0d1117",
   },
-  backGlowOne: {
+  darkBase: {
     position: "absolute",
-    width: "460px",
-    height: "460px",
-    borderRadius: "50%",
-    background: "rgba(255, 198, 109, 0.35)",
-    filter: "blur(45px)",
-    top: "-100px",
-    right: "-80px",
+    inset: 0,
+    background: "#0d1117",
+    zIndex: 0,
   },
-  backGlowTwo: {
+  backgroundGradient: {
     position: "absolute",
-    width: "360px",
-    height: "360px",
+    inset: 0,
+    background: "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(78,205,196,0.08) 0%, transparent 70%)",
+    zIndex: 1,
+  },
+  gridPattern: {
+    position: "absolute",
+    inset: 0,
+    backgroundImage: `
+      linear-gradient(#252f42 1px, transparent 1px),
+      linear-gradient(90deg, #252f42 1px, transparent 1px)
+    `,
+    backgroundSize: "60px 60px",
+    opacity: 0.35,
+    zIndex: 2,
+  },
+  splitContainer: {
+    position: "relative",
+    zIndex: 3,
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    minHeight: "100vh",
+    background: "transparent",
+  },
+  heroSection: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "40px",
+    color: "#dde5f4",
+    background: "transparent",
+  },
+  heroContent: {
+    maxWidth: "560px",
+    animation: "fadeUp 0.8s ease",
+  },
+  heroBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "7px",
+    padding: "5px 14px",
+    background: "rgba(78,205,196,0.08)",
+    border: "1px solid rgba(78,205,196,0.25)",
+    borderRadius: "20px",
+    fontSize: "11px",
+    color: "#4ecdc4",
+    letterSpacing: "1px",
+    textTransform: "uppercase",
+    marginBottom: "28px",
+  },
+  badgeDot: {
+    width: "6px",
+    height: "6px",
     borderRadius: "50%",
-    background: "rgba(133, 220, 255, 0.35)",
-    filter: "blur(50px)",
-    bottom: "-100px",
-    left: "-70px",
+    background: "#4ecdc4",
+    boxShadow: "0 0 8px #4ecdc4",
+    animation: "blink 2s ease-in-out infinite",
+  },
+  heroTitle: {
+    fontFamily: "'Clash Display', sans-serif",
+    fontSize: "clamp(42px, 10vw, 58px)",
+    fontWeight: 700,
+    lineHeight: 1.0,
+    letterSpacing: "-2px",
+    marginBottom: "24px",
+  },
+  heroHighlight: {
+    color: "#4ecdc4",
+  },
+  heroDescription: {
+    fontSize: "15px",
+    lineHeight: 1.7,
+    color: "#8899bb",
+    marginBottom: "40px",
+  },
+  heroButtons: {
+    display: "flex",
+    gap: "12px",
+    marginBottom: "32px",
+    flexWrap: "wrap",
+  },
+  primaryButton: {
+    padding: "13px 28px",
+    background: "#4ecdc4",
+    color: "#0d1117",
+    border: "none",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontFamily: "'Clash Display', sans-serif",
+    fontSize: "14px",
+    fontWeight: 600,
+    transition: "transform 0.15s, box-shadow 0.15s",
+    ":hover": {
+      transform: "translateY(-2px)",
+      boxShadow: "0 8px 24px rgba(78,205,196,0.3)",
+    },
+  },
+  secondaryButton: {
+    padding: "13px 28px",
+    background: "transparent",
+    color: "#8899bb",
+    border: "1px solid #2d3a52",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontFamily: "'DM Mono', monospace",
+    fontSize: "13px",
+    transition: "border-color 0.2s, color 0.2s",
+    ":hover": {
+      borderColor: "#4ecdc4",
+      color: "#4ecdc4",
+    },
+  },
+  techStack: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+  },
+  techBadge: {
+    padding: "6px 12px",
+    background: "#161b27",
+    border: "1px solid #252f42",
+    borderRadius: "8px",
+    fontSize: "11px",
+    color: "#8899bb",
+  },
+  authSection: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "40px",
+    background: "rgba(13,17,23,0.95)",
+    backdropFilter: "blur(10px)",
+    borderLeft: "1px solid #252f42",
   },
   authCard: {
-    position: "relative",
-    zIndex: 2,
     width: "100%",
-    maxWidth: "460px",
-    background: "rgba(255, 255, 255, 0.92)",
-    borderRadius: "18px",
-    padding: "26px",
-    boxShadow: "0 24px 45px rgba(0, 0, 0, 0.24)",
+    maxWidth: "380px",
+    padding: "32px",
+    background: "#161b27",
+    border: "1px solid #252f42",
+    borderRadius: "16px",
+    boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
   },
   title: {
     margin: "0 0 8px",
-    color: "#0c2f45",
-    fontSize: "30px",
-    lineHeight: 1.1,
+    color: "#dde5f4",
+    fontSize: "28px",
+    fontFamily: "'Clash Display', sans-serif",
+    fontWeight: 700,
   },
   subtitle: {
-    margin: "0 0 18px",
-    color: "#334c5c",
-    fontSize: "14px",
+    margin: "0 0 32px",
+    color: "#5c7099",
+    fontSize: "13px",
+    lineHeight: 1.6,
   },
   toggleWrap: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: "8px",
-    marginBottom: "14px",
+    marginBottom: "24px",
+    background: "#1c2333",
+    padding: "4px",
+    borderRadius: "8px",
   },
   toggle: {
-    border: "1px solid #9bb3c3",
-    background: "#f6fbff",
-    color: "#2b4250",
+    border: "none",
+    background: "transparent",
+    color: "#5c7099",
     fontWeight: 600,
-    borderRadius: "10px",
+    borderRadius: "6px",
     padding: "10px",
     cursor: "pointer",
+    fontSize: "13px",
+    transition: "all 0.2s",
   },
   toggleActive: {
-    border: "1px solid #0b6572",
-    background: "#0b6572",
-    color: "#fff",
+    border: "none",
+    background: "#4ecdc4",
+    color: "#0d1117",
     fontWeight: 700,
-    borderRadius: "10px",
+    borderRadius: "6px",
     padding: "10px",
     cursor: "pointer",
+    fontSize: "13px",
+    boxShadow: "0 2px 8px rgba(78,205,196,0.3)",
   },
   form: {
-    display: "grid",
-    gap: "10px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
   },
   input: {
-    border: "1px solid #bbcad5",
-    borderRadius: "10px",
-    padding: "12px",
-    fontSize: "15px",
-    background: "#fefefe",
+    border: "1px solid #252f42",
+    borderRadius: "8px",
+    padding: "12px 16px",
+    fontSize: "13px",
+    background: "#1c2333",
+    color: "#dde5f4",
+    outline: "none",
+    transition: "border-color 0.2s",
+    "::placeholder": {
+      color: "#5c7099",
+    },
+    ":focus": {
+      borderColor: "#4ecdc4",
+    },
   },
   error: {
-    borderRadius: "10px",
-    padding: "10px",
-    background: "#ffebeb",
-    color: "#841c1c",
-    fontSize: "14px",
+    borderRadius: "8px",
+    padding: "12px",
+    background: "rgba(255,107,107,0.1)",
+    border: "1px solid rgba(255,107,107,0.3)",
+    color: "#ff6b6b",
+    fontSize: "12px",
   },
-  primaryButton: {
+  submitButton: {
     border: "none",
-    borderRadius: "12px",
-    padding: "12px 14px",
-    fontWeight: 700,
-    background: "linear-gradient(100deg, #1469c4, #1f90b2)",
-    color: "#fff",
-    cursor: "pointer",
-  },
-  ghostButton: {
-    border: "1px solid #5a7a90",
-    background: "rgba(255, 255, 255, 0.65)",
-    borderRadius: "10px",
-    padding: "8px 14px",
-    cursor: "pointer",
-    color: "#17384d",
+    borderRadius: "8px",
+    padding: "14px",
     fontWeight: 600,
+    fontSize: "13px",
+    background: "#4ecdc4",
+    color: "#0d1117",
+    cursor: "pointer",
+    marginTop: "8px",
+    transition: "all 0.2s",
+    fontFamily: "'Clash Display', sans-serif",
+    ":hover": {
+      transform: "translateY(-1px)",
+      boxShadow: "0 4px 12px rgba(78,205,196,0.3)",
+    },
+    ":disabled": {
+      opacity: 0.5,
+      cursor: "not-allowed",
+    },
+  },
+  statsBar: {
+    marginTop: "24px",
+    padding: "16px",
+    background: "#1c2333",
+    borderRadius: "10px",
+    fontSize: "12px",
+    color: "#5c7099",
+    textAlign: "center",
+    border: "1px solid #252f42",
   },
 };
 
