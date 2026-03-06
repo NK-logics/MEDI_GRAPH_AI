@@ -1,29 +1,29 @@
 from app.db.neo4j_driver import get_session
 from datetime import datetime
 
-def insertSymptoms(userId, symptoms, sourceText):
-    
+def insert_symptoms(user_id, symptoms, source_text, reported_date):
+
     session = get_session()
 
     for symptom in symptoms:
 
         query = """
         MERGE (u:User {id:$user_id})
-
         MERGE (s:Symptom {name:$symptom})
 
         MERGE (u)-[:HAS_SYMPTOM {
-            reported_at: date(),
-            source_text: $source,
+            reported_at: $reported_date,
+            source_text: $source_text,
             created_at: datetime()
         }]->(s)
         """
 
         session.run(
             query,
-            userId=userId,
+            user_id=user_id,
             symptom=symptom,
-            source=sourceText
+            source_text=source_text,
+            reported_date=str(reported_date)
         )
 
 def insert_triggers(user_id, triggers):
