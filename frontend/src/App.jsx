@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import GraphPanel from "./GraphPanel";
 
 const TOKEN_KEY = "memory_graph_token";
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function App() {
   const [mode, setMode] = useState("login");
@@ -10,6 +11,8 @@ function App() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [showSignupLinkInError, setShowSignupLinkInError] = useState(false);
   const [userId, setUserId] = useState(() => localStorage.getItem("user_id") || "");
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) || "");
 
@@ -54,10 +57,122 @@ function App() {
     return () => styleSheet.remove();
   }, []);
 
+  useEffect(() => {
+    setError("");
+    setFieldErrors({});
+    setShowSignupLinkInError(false);
+  }, [mode]);
+
+  function clearFieldError(field) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
+  function parseAuthError(data, fallbackMessage) {
+    if (!data || typeof data !== "object") {
+      return { message: fallbackMessage, fieldErrors: {} };
+    }
+
+    if (typeof data.error === "string" && data.error.trim()) {
+      return { message: data.error, fieldErrors: {} };
+    }
+
+    if (typeof data.detail === "string" && data.detail.trim()) {
+      return { message: data.detail, fieldErrors: {} };
+    }
+
+    if (Array.isArray(data.detail)) {
+      const nextFieldErrors = {};
+      const messages = [];
+
+      data.detail.forEach((entry) => {
+        const message = typeof entry?.msg === "string" ? entry.msg : "";
+        const loc = Array.isArray(entry?.loc) ? entry.loc : [];
+        const field = loc.length > 0 ? loc[loc.length - 1] : null;
+
+        if (field && typeof field === "string") {
+          nextFieldErrors[field] = message || "Invalid value";
+        } else if (message) {
+          messages.push(message);
+        }
+      });
+
+      if (Object.keys(nextFieldErrors).length > 0) {
+        return { message: "", fieldErrors: nextFieldErrors };
+      }
+
+      if (messages.length > 0) {
+        return { message: messages.join(", "), fieldErrors: {} };
+      }
+    }
+
+    return { message: fallbackMessage, fieldErrors: {} };
+  }
+
+  function validateAuthForm() {
+    const nextFieldErrors = {};
+
+    if (mode === "signup") {
+      if (!name.trim()) {
+        nextFieldErrors.name = "Please enter your full name";
+      } else if (name.trim().length < 2) {
+        nextFieldErrors.name = "Name must be at least 2 characters";
+      }
+    }
+
+    if (!email.trim()) {
+      nextFieldErrors.email = "Please enter your email";
+    } else if (!EMAIL_REGEX.test(email.trim())) {
+      nextFieldErrors.email = "Please enter a valid email address";
+    }
+
+    if (!password) {
+      nextFieldErrors.password = "Please enter your password";
+    } else if (mode === "signup" && password.length < 8) {
+      nextFieldErrors.password = "Password must be at least 8 characters";
+    }
+
+    setFieldErrors(nextFieldErrors);
+    return Object.keys(nextFieldErrors).length === 0;
+  }
+
+  function getFriendlyLoginMessage(rawMessage) {
+    if (!rawMessage) {
+      return { message: "Login failed", suggestSignup: false };
+    }
+
+    const normalized = rawMessage.toLowerCase();
+    if (
+      normalized.includes("user not found") ||
+      normalized.includes("email not found") ||
+      normalized.includes("email does not exist")
+    ) {
+      return {
+        message: "Email does not exist. We suggest you sign up first.",
+        suggestSignup: true,
+      };
+    }
+
+    return { message: rawMessage, suggestSignup: false };
+  }
+
   async function handleAuthSubmit(event) {
     event.preventDefault();
+    if (!validateAuthForm()) {
+      setError("");
+      return;
+    }
+
     setLoading(true);
     setError("");
+    setFieldErrors({});
+    setShowSignupLinkInError(false);
 
     try {
       if (mode === "signup") {
@@ -67,8 +182,10 @@ function App() {
           body: JSON.stringify({ name, email, password }),
         });
         const signupData = await signupRes.json();
-        if (!signupRes.ok || signupData.error) {
-          throw new Error(signupData.error || "Signup failed");
+        if (!signupRes.ok || signupData.error || signupData.detail) {
+          const parsedError = parseAuthError(signupData, "Signup failed");
+          setFieldErrors(parsedError.fieldErrors);
+          throw new Error(parsedError.message || "Please correct highlighted fields");
         }
       }
 
@@ -79,8 +196,12 @@ function App() {
       });
 
       const loginData = await loginRes.json();
-      if (!loginRes.ok || loginData.error || !loginData.access_token) {
-        throw new Error(loginData.error || "Login failed");
+      if (!loginRes.ok || loginData.error || loginData.detail || !loginData.access_token) {
+        const parsedError = parseAuthError(loginData, "Login failed");
+        setFieldErrors(parsedError.fieldErrors);
+        const friendlyLogin = getFriendlyLoginMessage(parsedError.message);
+        setShowSignupLinkInError(friendlyLogin.suggestSignup);
+        throw new Error(friendlyLogin.message || "Please correct highlighted fields");
       }
 
       localStorage.setItem(TOKEN_KEY, loginData.access_token);
@@ -195,33 +316,82 @@ function App() {
 
             <form onSubmit={handleAuthSubmit} style={styles.form}>
               {mode === "signup" ? (
-                <input
-                  style={styles.input}
-                  type="text"
-                  placeholder="Full name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  required
-                />
+                <>
+                  <input
+                    style={{
+                      ...styles.input,
+                      ...(fieldErrors.name ? styles.inputError : null),
+                    }}
+                    type="text"
+                    placeholder="Full name"
+                    value={name}
+                    onChange={(event) => {
+                      setName(event.target.value);
+                      setError("");
+                      clearFieldError("name");
+                    }}
+                    required
+                  />
+                  {fieldErrors.name ? <div style={styles.fieldError}>{fieldErrors.name}</div> : null}
+                </>
               ) : null}
               <input
-                style={styles.input}
+                style={{
+                  ...styles.input,
+                  ...(fieldErrors.email ? styles.inputError : null),
+                }}
                 type="email"
                 placeholder="Email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setError("");
+                  clearFieldError("email");
+                }}
                 required
               />
+              {fieldErrors.email ? <div style={styles.fieldError}>{fieldErrors.email}</div> : null}
               <input
-                style={styles.input}
+                style={{
+                  ...styles.input,
+                  ...(fieldErrors.password ? styles.inputError : null),
+                }}
                 type="password"
                 placeholder="Password"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setError("");
+                  clearFieldError("password");
+                }}
+                minLength={mode === "signup" ? 8 : undefined}
                 required
               />
+              {fieldErrors.password ? <div style={styles.fieldError}>{fieldErrors.password}</div> : null}
+              {mode === "signup" ? (
+                <div style={styles.passwordHint}>
+                  Use at least 8 characters
+                </div>
+              ) : null}
 
-              {error ? <div style={styles.error}>{error}</div> : null}
+              {error ? (
+                <div style={styles.error}>
+                  <span>{error}</span>
+                  {mode === "login" && showSignupLinkInError ? (
+                    <button
+                      type="button"
+                      style={styles.errorLinkButton}
+                      onClick={() => {
+                        setMode("signup");
+                        setError("");
+                        setShowSignupLinkInError(false);
+                      }}
+                    >
+                      Go to Sign Up
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
 
               <button type="submit" style={styles.submitButton} disabled={loading}>
                 {loading ? "Authenticating..." : mode === "login" ? "Login →" : "Sign Up →"}
@@ -536,6 +706,21 @@ const styles = {
       borderColor: "#4ecdc4",
     },
   },
+  inputError: {
+    borderColor: "#ff6b6b",
+  },
+  fieldError: {
+    marginTop: "-6px",
+    color: "#ff8d8d",
+    fontSize: "11px",
+    lineHeight: 1.4,
+  },
+  passwordHint: {
+    marginTop: "-4px",
+    color: "#5c7099",
+    fontSize: "11px",
+    lineHeight: 1.4,
+  },
   error: {
     borderRadius: "8px",
     padding: "12px",
@@ -543,6 +728,19 @@ const styles = {
     border: "1px solid rgba(255,107,107,0.3)",
     color: "#ff6b6b",
     fontSize: "12px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+  },
+  errorLinkButton: {
+    alignSelf: "flex-start",
+    background: "transparent",
+    border: "none",
+    color: "#ffb3b3",
+    textDecoration: "underline",
+    cursor: "pointer",
+    fontSize: "12px",
+    padding: 0,
   },
   submitButton: {
     border: "none",
